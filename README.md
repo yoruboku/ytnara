@@ -1,6 +1,12 @@
 # YT-Nara: Universal Content Automation Tool
 
-🚀 **YT-Nara** is a comprehensive content automation tool that discovers, processes, and uploads content across multiple platforms including YouTube, Instagram, and TikTok.
+🚀 **YT-Nara** is a **100% FREE** comprehensive content automation tool that discovers, processes, and uploads content across multiple platforms including YouTube, Instagram, and TikTok.
+
+## 💯 **COMPLETELY FREE**
+- ✅ **No API Keys Required** - Only uses free Wikipedia API
+- ✅ **No Paid Services** - All dependencies are open-source and free
+- ✅ **No Subscriptions** - One-time setup, use forever
+- ✅ **No Hidden Costs** - Everything runs locally on your machine
 
 ## ✨ Features
 
@@ -24,32 +30,34 @@
 - **Progress Tracking**: Real-time dashboard with statistics and progress monitoring
 - **Flexible Scheduling**: Run immediately or schedule uploads across days/weeks
 
-## 🛠️ Installation
+## 🛠️ **SUPER EASY INSTALLATION**
 
-### Prerequisites
-- Python 3.8 or higher
-- Chrome browser (for Selenium automation)
-- FFmpeg (for video processing)
-
-### Step 1: Clone and Setup
+### One Command Setup (Linux/Mac)
 ```bash
 git clone <repository-url>
 cd yt-nara
-pip install -r requirements.txt
+./setup.sh
 ```
 
-### Step 2: Install ChromeDriver
-Download ChromeDriver from https://chromedriver.chromium.org/ and ensure it's in your PATH.
-
-### Step 3: Install FFmpeg
-- **Windows**: Download from https://ffmpeg.org/download.html
-- **macOS**: `brew install ffmpeg`
-- **Linux**: `sudo apt install ffmpeg`
-
-### Step 4: Initial Setup
+### One Command Setup (Windows)
 ```bash
-python yt_nara.py --setup
+git clone <repository-url>
+cd yt-nara
+setup.bat
 ```
+
+**That's it! No complex setup, no API keys, no configuration files to edit.**
+
+### What the setup script does:
+- ✅ Installs all free Python dependencies
+- ✅ Creates necessary directories
+- ✅ Sets up configuration files
+- ✅ Tests everything works
+- ✅ Ready to use immediately
+
+### Optional (for full features):
+- **Chrome browser** - for automated uploading
+- **FFmpeg** - for video processing (the script will guide you)
 
 ## 🚀 Quick Start
 
