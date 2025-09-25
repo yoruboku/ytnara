@@ -57,20 +57,72 @@ class WikipediaResearcher:
             # Extract keywords from the article
             keywords = self._extract_keywords(article_content, topic)
             
-            # Get related topics
-            related_topics = await self._get_related_topics(main_page)
-            keywords.extend(related_topics[:10])
+            # Get related topics from search results (more reliable)
+            related_keywords = []
+            for result in search_results[1:6]:  # Get top 5 related articles
+                related_keywords.append(result['title'].lower())
             
-            # Remove duplicates and return
+            keywords.extend(related_keywords)
+            
+            # Remove duplicates and filter out Wikipedia metadata
             unique_keywords = list(set(keywords))
+            filtered_keywords = self._filter_wikipedia_metadata(unique_keywords)
             
-            logging.info(f"Extracted {len(unique_keywords)} keywords for topic: {topic}")
-            return unique_keywords[:50]
+            # If we don't have enough good keywords, use fallback
+            if len(filtered_keywords) < 3:
+                logging.info(f"Using fallback keywords for topic: {topic}")
+                return self._generate_fallback_keywords(topic)
+            
+            # Always include the fallback keywords to ensure good coverage
+            fallback_keywords = self._generate_fallback_keywords(topic)
+            all_keywords = list(set(filtered_keywords + fallback_keywords))
+            
+            logging.info(f"Extracted {len(all_keywords)} keywords for topic: {topic}")
+            return all_keywords[:50]
             
         except Exception as e:
             logging.error(f"Error researching topic {topic}: {str(e)}")
             return self._generate_fallback_keywords(topic)
     
+    def _filter_wikipedia_metadata(self, keywords: List[str]) -> List[str]:
+        """Filter out Wikipedia metadata and keep only relevant keywords"""
+        filtered = []
+        
+        # Wikipedia metadata patterns to exclude
+        metadata_patterns = [
+            'articles containing',
+            'all articles',
+            'articles with',
+            'articles lacking',
+            'wikipedia articles',
+            'articles written',
+            'containing potentially',
+            'containing french-language',
+            'containing japanese-language',
+            'introductions',
+            'statements from',
+            'dead external links',
+            'short description',
+            'reliable references'
+        ]
+        
+        for keyword in keywords:
+            # Skip if it matches any metadata pattern
+            is_metadata = any(pattern in keyword.lower() for pattern in metadata_patterns)
+            
+            # Skip very short or very long keywords
+            if len(keyword) < 2 or len(keyword) > 50:
+                continue
+                
+            # Skip if it's mostly numbers or special characters
+            if keyword.replace(' ', '').isdigit() or not keyword.replace(' ', '').isalnum():
+                continue
+            
+            if not is_metadata:
+                filtered.append(keyword)
+        
+        return filtered
+
     def _generate_fallback_keywords(self, topic: str) -> List[str]:
         """Generate fallback keywords when Wikipedia fails"""
         base_keywords = [topic]
@@ -80,7 +132,18 @@ class WikipediaResearcher:
         for term in content_terms:
             base_keywords.append(f"{topic} {term}")
         
-        return base_keywords
+        # Add topic-specific keywords based on common patterns
+        if 'anime' in topic.lower():
+            anime_terms = ['anime moments', 'anime compilation', 'anime funny moments', 'anime edit', 'anime clips']
+            base_keywords.extend(anime_terms)
+        elif 'meme' in topic.lower():
+            meme_terms = ['memes compilation', 'funny memes', 'viral memes', 'meme edit', 'meme compilation']
+            base_keywords.extend(meme_terms)
+        elif 'one piece' in topic.lower():
+            onepiece_terms = ['one piece moments', 'one piece compilation', 'one piece funny moments', 'luffy', 'zoro']
+            base_keywords.extend(onepiece_terms)
+        
+        return base_keywords[:15]  # Limit to 15 keywords
     
     async def _search_wikipedia(self, query: str) -> List[Dict]:
         """Search Wikipedia for articles"""
@@ -179,41 +242,3 @@ class WikipediaResearcher:
         
         return filtered_keywords
     
-    async def _get_related_topics(self, title: str) -> List[str]:
-        """Get related topics/categories from Wikipedia"""
-        params = {
-            'action': 'query',
-            'format': 'json',
-            'titles': title,
-            'prop': 'categories|links',
-            'cllimit': 20,
-            'pllimit': 20
-        }
-        
-        related_topics = []
-        
-        try:
-            async with self.session.get(self.api_url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    pages = data.get('query', {}).get('pages', {})
-                    
-                    for page_id, page_data in pages.items():
-                        # Extract from categories
-                        categories = page_data.get('categories', [])
-                        for cat in categories:
-                            cat_title = cat.get('title', '').replace('Category:', '')
-                            if cat_title and len(cat_title) > 2:
-                                related_topics.append(cat_title.lower())
-                        
-                        # Extract from links
-                        links = page_data.get('links', [])
-                        for link in links[:10]:
-                            link_title = link.get('title', '')
-                            if link_title and len(link_title) > 2:
-                                related_topics.append(link_title.lower())
-        
-        except Exception as e:
-            logging.error(f"Error getting related topics: {str(e)}")
-        
-        return related_topics
