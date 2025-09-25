@@ -33,8 +33,8 @@
 
 ### Step 1: Clone and Setup
 ```bash
-git clone <repository-url>
-cd yt-nara
+git clone https://github.com/yoruboku/ytnara
+cd ytnara
 pip install -r requirements.txt
 ```
 
