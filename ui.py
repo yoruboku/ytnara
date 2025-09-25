@@ -38,58 +38,87 @@ class TerminalUI:
         self.console.print(banner_panel)
     
     def get_topic_input(self) -> str:
-        """Get topic input from user"""
+        """Get topic input from user with improved input handling"""
         topic_panel = Panel(
             "[bold cyan]📝 Topic Configuration[/bold cyan]",
             border_style="cyan"
         )
         self.console.print(topic_panel)
         
-        topic = Prompt.ask(
-            "[bold cyan]Enter your topic[/bold cyan]",
-            default="anime memes",
-            show_default=True
-        )
+        try:
+            # Try Rich prompt first (supports backspace and editing)
+            topic = Prompt.ask(
+                "[bold cyan]Enter your topic[/bold cyan]",
+                default="anime memes",
+                show_default=True
+            )
+        except (KeyboardInterrupt, EOFError):
+            # Fallback to basic input if Rich prompt fails
+            self.console.print("[yellow]Using basic input mode...[/yellow]")
+            topic = input("Enter your topic (anime memes): ").strip()
+            if not topic:
+                topic = "anime memes"
         
         self.console.print(f"[green]✅ Topic set: {topic}[/green]")
         return topic
     
     def get_cycles_input(self) -> int:
-        """Get number of cycles from user"""
+        """Get number of cycles from user with improved input handling"""
         cycles_panel = Panel(
             "[bold yellow]🔄 Cycle Configuration[/bold yellow]",
             border_style="yellow"
         )
         self.console.print(cycles_panel)
         
-        cycles = IntPrompt.ask(
-            "[bold yellow]How many cycles to run?[/bold yellow]",
-            default=3,
-            show_default=True
-        )
+        try:
+            cycles = IntPrompt.ask(
+                "[bold yellow]How many cycles to run?[/bold yellow]",
+                default=3,
+                show_default=True
+            )
+        except (KeyboardInterrupt, EOFError, ValueError):
+            # Fallback to basic input if Rich prompt fails
+            self.console.print("[yellow]Using basic input mode...[/yellow]")
+            try:
+                cycles = int(input("How many cycles to run? (3): ").strip() or "3")
+            except ValueError:
+                cycles = 3
         
         self.console.print(f"[green]✅ Cycles set: {cycles}[/green]")
         return cycles
     
     def get_daily_frequency_input(self) -> Optional[int]:
-        """Get daily frequency input from user"""
+        """Get daily frequency input from user with improved input handling"""
         schedule_panel = Panel(
             "[bold magenta]📅 Schedule Configuration[/bold magenta]",
             border_style="magenta"
         )
         self.console.print(schedule_panel)
         
-        use_scheduling = Confirm.ask(
-            "[bold magenta]Do you want to schedule uploads throughout the day?[/bold magenta]",
-            default=True
-        )
+        try:
+            use_scheduling = Confirm.ask(
+                "[bold magenta]Do you want to schedule uploads throughout the day?[/bold magenta]",
+                default=True
+            )
+        except (KeyboardInterrupt, EOFError):
+            # Fallback to basic input
+            self.console.print("[yellow]Using basic input mode...[/yellow]")
+            response = input("Schedule uploads throughout the day? (y/n): ").strip().lower()
+            use_scheduling = response in ['y', 'yes', '']
         
         if use_scheduling:
-            frequency = IntPrompt.ask(
-                "[bold magenta]How many uploads per day?[/bold magenta]",
-                default=4,
-                show_default=True
-            )
+            try:
+                frequency = IntPrompt.ask(
+                    "[bold magenta]How many uploads per day?[/bold magenta]",
+                    default=4,
+                    show_default=True
+                )
+            except (KeyboardInterrupt, EOFError, ValueError):
+                # Fallback to basic input
+                try:
+                    frequency = int(input("How many uploads per day? (4): ").strip() or "4")
+                except ValueError:
+                    frequency = 4
             self.console.print(f"[green]✅ Daily frequency set: {frequency}[/green]")
             return frequency
         else:

@@ -315,3 +315,11 @@ A: Some videos may require authentication - this is expected behavior.
 ---
 
 **🎉 Ready to automate your content workflow? Start with `python3 demo.py` to see YT-Nara in action!**
+
+---
+
+## 👨‍💻 **Developer**
+
+**Created by [Omen Boku](https://github.com/yoruboku)** - A passionate developer building automation tools for content creators.
+
+*If you find this tool useful, consider giving it a star ⭐ on GitHub!*
