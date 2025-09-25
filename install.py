@@ -27,14 +27,15 @@ def install_dependencies():
     if not success:
         print(f"⚠️ Warning: Could not upgrade pip: {stderr}")
     
-    # Install requirements
-    success, stdout, stderr = run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+    # Install requirements with break-system-packages for modern Python
+    success, stdout, stderr = run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--break-system-packages"])
     
     if success:
         print("✅ Dependencies installed successfully")
         return True
     else:
         print(f"❌ Failed to install dependencies: {stderr}")
+        print("💡 Try running: pip install -r requirements.txt --break-system-packages")
         return False
 
 def create_directories():
@@ -173,18 +174,22 @@ def show_next_steps():
     """Show next steps to user"""
     print("\n🎉 Installation Complete!")
     print("\n📋 Next Steps:")
-    print("1. Run: python3 yt_nara.py --setup")
+    print("1. Test the installation:")
+    print("   python3 demo.py")
+    print("   (This tests all functionality without full setup)")
+    print("\n2. Run setup:")
+    print("   python3 yt_nara.py --setup")
     print("   (This will help you set up your social media accounts)")
-    print("\n2. Start using YT-Nara:")
+    print("\n3. Start using YT-Nara:")
     print("   python3 yt_nara.py")
-    print("\n3. For help:")
-    print("   python3 yt_nara.py --help")
+    print("\n4. For quick start:")
+    print("   python3 quick_start.py --example")
     print("\n📖 Documentation:")
     print("   - README.md: Overview and usage")
     print("   - SETUP.md: Detailed setup guide")
     print("\n⚠️ Important:")
-    print("   - Install Chrome browser if not already installed")
-    print("   - Install FFmpeg for video processing")
+    print("   - ChromeDriver is now managed automatically")
+    print("   - FFmpeg is optional (video editing will be disabled if not available)")
     print("   - Have your social media accounts ready")
 
 def main():
