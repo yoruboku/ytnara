@@ -1,6 +1,27 @@
-# YT-Nara Setup Guide
+# YT-Nara Setup Guide (Updated & Simplified)
 
-This comprehensive guide will help you set up YT-Nara from scratch, including all dependencies and configurations.
+This comprehensive guide will help you set up the **fixed and enhanced** YT-Nara from scratch.
+
+## 🚀 Quick Setup (Recommended)
+
+### Option 1: One-Command Setup
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd yt-nara
+
+# Run the quick start script
+python3 quick_start.py --setup
+```
+
+### Option 2: Test First, Then Setup
+```bash
+# Test functionality without full setup
+python3 demo.py
+
+# If demo passes, proceed with setup
+python3 quick_start.py --setup
+```
 
 ## 📋 Prerequisites
 
@@ -14,24 +35,40 @@ This comprehensive guide will help you set up YT-Nara from scratch, including al
 ### Required Software
 1. **Python 3.8+**: Download from [python.org](https://www.python.org/downloads/)
 2. **Google Chrome**: Latest version from [google.com/chrome](https://www.google.com/chrome/)
-3. **FFmpeg**: For video processing
+3. **FFmpeg**: Optional, for advanced video processing
 
-## 🚀 Step-by-Step Installation
+## 🛠️ Manual Installation (If Quick Setup Fails)
 
 ### Step 1: Install Python Dependencies
 
 ```bash
-# Clone the repository (or download and extract)
+# Clone the repository
+git clone <your-repo-url>
 cd yt-nara
 
 # Install Python packages
-pip install -r requirements.txt
+pip install -r requirements.txt --break-system-packages
 
-# For development (optional)
-pip install -r requirements-dev.txt
+# Test the installation
+python3 test_installation.py
 ```
 
-### Step 2: Install FFmpeg
+### Step 2: Create Directories and Config Files
+
+```bash
+# Run initial setup
+python3 yt_nara.py --setup
+```
+
+This will create:
+- `downloads/` - Downloaded videos
+- `edited_videos/` - Processed videos
+- `data/` - Configuration and database files
+- `logs/` - Application logs
+- `sessions/` - Browser session data
+- `temp/` - Temporary files
+
+### Step 3: Install FFmpeg (Optional)
 
 #### Windows
 1. Download FFmpeg from [ffmpeg.org](https://ffmpeg.org/download.html#build-windows)
@@ -54,299 +91,157 @@ sudo apt update
 sudo apt install ffmpeg
 ```
 
-#### Linux (CentOS/RHEL/Fedora)
+#### Linux (CentOS/RHEL)
 ```bash
-# CentOS/RHEL
 sudo yum install ffmpeg
-
-# Fedora
+# or for newer versions
 sudo dnf install ffmpeg
 ```
 
-### Step 3: Install ChromeDriver
+## 🔧 Configuration
 
-#### Automatic Installation (Recommended)
-```bash
-# Install webdriver-manager for automatic ChromeDriver management
-pip install webdriver-manager
-```
+### Initial Configuration
 
-#### Manual Installation
-1. Check your Chrome version: `chrome://version/`
-2. Download matching ChromeDriver from [chromedriver.chromium.org](https://chromedriver.chromium.org/)
-3. Extract and place in system PATH
+The setup process creates default configuration files in `data/`:
 
-#### Verify ChromeDriver
-```bash
-chromedriver --version
-```
+- `config.json` - Main application settings
+- `accounts.json` - Social media account configuration
 
-### Step 4: Initial Setup
+### Account Setup
 
-```bash
-# Run the setup wizard
-python yt_nara.py --setup
-```
+YT-Nara supports:
+- **2 YouTube accounts**
+- **2 Instagram accounts**
 
-This will:
-- Create necessary directories
-- Check all dependencies
-- Create default configuration files
-- Set up the database
+On first run, the application will:
+1. Open browser windows for each account
+2. Guide you through the login process
+3. Save session data for future use
 
-## 🔐 Account Configuration
+### Customizing Settings
 
-### YouTube Accounts Setup
-
-1. **Create YouTube Accounts** (if you don't have them):
-   - Go to [youtube.com](https://youtube.com)
-   - Create 2 separate Google accounts
-   - Enable YouTube channels for both accounts
-
-2. **Enable YouTube Studio Access**:
-   - Visit [studio.youtube.com](https://studio.youtube.com) for each account
-   - Complete any required setup steps
-
-### Instagram Accounts Setup
-
-1. **Create Instagram Accounts** (if you don't have them):
-   - Go to [instagram.com](https://instagram.com)
-   - Create 2 separate accounts
-   - Verify email addresses
-
-2. **Account Requirements**:
-   - Accounts should not be brand new (wait 24-48 hours after creation)
-   - Complete profile setup (bio, profile picture)
-   - Post at least 1-2 pieces of content manually first
-
-### First-Time Login Process
-
-When you first run YT-Nara, it will:
-
-1. **Open Chrome Windows**: One for each account (4 total)
-2. **Guide You Through Login**: You'll need to manually log in to each account
-3. **Save Sessions**: Login sessions are saved for future use
-4. **Verify Access**: Confirm each account can access upload features
-
-**Important**: Keep these browser windows open during the login process. YT-Nara will guide you through each step.
-
-## 📁 Directory Structure After Setup
-
-```
-yt-nara/
-├── downloads/              # Downloaded videos
-├── edited_videos/          # Processed videos ready for upload
-├── data/                   # Configuration and database files
-│   ├── config.json        # Main configuration
-│   ├── accounts.json      # Account status
-│   ├── content.db         # SQLite database
-│   └── schedule.json      # Scheduled tasks
-├── logs/                   # Application logs
-│   └── yt_nara.log       # Main log file
-├── sessions/              # Browser session data
-│   ├── youtube/           # YouTube account sessions
-│   │   ├── account1/
-│   │   └── account2/
-│   └── instagram/         # Instagram account sessions
-│       ├── account1/
-│       └── account2/
-└── temp/                  # Temporary files
-```
-
-## ⚙️ Configuration Options
-
-### Basic Configuration (`data/config.json`)
+Edit `data/config.json` to customize:
 
 ```json
 {
   "video_processing": {
     "max_video_duration": 60,
-    "output_format": "mp4",
-    "quality": "720p",
-    "watermark_enabled": true,
     "watermark_text": "YT-Nara",
     "watermark_position": "bottom_right"
   },
   "upload": {
     "max_retries": 3,
-    "retry_delay": 30,
     "upload_delay_min": 30,
     "upload_delay_max": 60
-  },
-  "content_discovery": {
-    "max_results_per_platform": 20,
-    "relevance_threshold": 0.3
   }
 }
 ```
 
-### Account Configuration (`data/accounts.json`)
+## 🧪 Testing Your Installation
 
-```json
-{
-  "youtube": [
-    {"name": "account1", "logged_in": false},
-    {"name": "account2", "logged_in": false}
-  ],
-  "instagram": [
-    {"name": "account1", "logged_in": false},
-    {"name": "account2", "logged_in": false}
-  ]
-}
-```
-
-## 🧪 Testing Your Setup
-
-### Quick Test Run
+### Run Demo Mode
 ```bash
-# Test with a simple topic
-python yt_nara.py --topic "test content" --cycles 1
+python3 demo.py
 ```
 
-### Verify Each Component
+This tests all core functionality without requiring full setup.
 
-1. **Wikipedia Research**:
-   ```bash
-   python -c "from modules.wikipedia_research import WikipediaResearcher; import asyncio; print(asyncio.run(WikipediaResearcher().research_topic('test')))"
-   ```
-
-2. **Content Discovery**:
-   ```bash
-   python -c "from modules.content_discovery import ContentDiscovery; print('Content discovery module loaded')"
-   ```
-
-3. **Video Processing**:
-   ```bash
-   ffmpeg -version
-   ```
-
-4. **Browser Automation**:
-   ```bash
-   python -c "from selenium import webdriver; driver = webdriver.Chrome(); driver.quit(); print('Selenium working')"
-   ```
-
-## 🔧 Troubleshooting Setup Issues
-
-### Common Problems and Solutions
-
-#### Python Import Errors
+### Test Installation
 ```bash
-# Problem: ModuleNotFoundError
-# Solution: Ensure all requirements are installed
-pip install -r requirements.txt --upgrade
+python3 test_installation.py
 ```
 
-#### ChromeDriver Issues
+This verifies all dependencies and modules are working.
+
+### Quick Example
 ```bash
-# Problem: ChromeDriver version mismatch
-# Solution: Update ChromeDriver
-pip install webdriver-manager --upgrade
+python3 quick_start.py --example
 ```
 
-#### FFmpeg Not Found
+This runs a simple automation example.
+
+## 🚀 First Run
+
+### Interactive Mode (Recommended)
 ```bash
-# Problem: FFmpeg not in PATH
-# Solution: Add FFmpeg to system PATH or reinstall
-
-# Test FFmpeg
-ffmpeg -version
+python3 yt_nara.py
 ```
 
-#### Permission Errors
+Follow the prompts:
+1. **Topic**: Enter your content topic (e.g., "anime memes")
+2. **Cycles**: Number of automation cycles
+3. **Schedule**: Immediate or scheduled execution
+4. **Confirm**: Review and start
+
+### Command Line Mode
 ```bash
-# Problem: Permission denied on Linux/macOS
-# Solution: Check file permissions
-chmod +x yt_nara.py
+# Run 1 cycle immediately
+python3 yt_nara.py --topic "anime memes" --cycles 1
+
+# Schedule multiple cycles
+python3 yt_nara.py --topic "one piece" --cycles 5 --daily-frequency 2
 ```
 
-#### Browser Login Issues
-- **Clear browser cache**: Remove session directories and try again
-- **Disable 2FA temporarily**: For initial setup (re-enable after)
-- **Use incognito mode**: If regular login fails
-- **Check account status**: Ensure accounts aren't restricted
+## 🔧 Troubleshooting
 
-### Debug Mode
-```bash
-# Run with debug logging
-python yt_nara.py --topic "debug test" --cycles 1 --debug
-```
+### Common Issues
 
-### Log Analysis
-Check `logs/yt_nara.log` for detailed error information:
-```bash
-tail -f logs/yt_nara.log
-```
+**"ChromeDriver not found"**
+- ✅ **FIXED**: ChromeDriver is now managed automatically
+- Ensure Chrome browser is installed
 
-## 🛡️ Security and Privacy
+**"MoviePy not available"**
+- ✅ **FIXED**: Video editing will be disabled, downloading still works
+- Install manually: `pip install moviepy --break-system-packages`
 
-### Data Protection
-- **Local Storage**: All data is stored locally on your machine
-- **Session Security**: Browser sessions are encrypted and stored securely
-- **No External Servers**: YT-Nara doesn't send data to external servers
+**"Circular import errors"**
+- ✅ **FIXED**: All import issues resolved with shared models
 
-### Account Security
-- **Use Strong Passwords**: For all social media accounts
-- **Enable 2FA**: After initial setup (may need to disable temporarily during setup)
-- **Regular Updates**: Keep YT-Nara and dependencies updated
+**"No content found"**
+- Try different or broader topic keywords
+- Check internet connection
+- Verify platform accessibility
 
-### Best Practices
-- **Separate Accounts**: Use dedicated accounts for automation
-- **Content Rights**: Only use content you have rights to
-- **Rate Limiting**: Don't modify built-in delays
-- **Monitoring**: Regularly check account status and upload success rates
+**"Login required"**
+- Browser sessions may have expired
+- Run: `python3 yt_nara.py --setup` to re-authenticate
 
-## 📊 Performance Optimization
+### Getting Help
 
-### System Optimization
-- **Close Unnecessary Programs**: Free up RAM and CPU
-- **SSD Storage**: Use SSD for faster video processing
-- **Network**: Ensure stable, fast internet connection
+1. **Check logs**: Look in `logs/yt_nara.log` for detailed error messages
+2. **Run demo**: `python3 demo.py` to test individual components
+3. **Test installation**: `python3 test_installation.py` to verify setup
 
-### Configuration Tuning
-```json
-{
-  "performance": {
-    "max_concurrent_downloads": 2,
-    "video_quality": "720p",
-    "enable_gpu_acceleration": true
-  }
-}
-```
+## 📊 Verification Checklist
 
-## 🔄 Maintenance
+After setup, verify these components work:
 
-### Regular Tasks
-- **Clear Old Videos**: Remove processed videos to free space
-- **Check Logs**: Monitor for errors or issues
-- **Update Dependencies**: Keep software updated
-- **Backup Configuration**: Save your settings
+- [ ] Python dependencies installed
+- [ ] Directories created
+- [ ] Configuration files generated
+- [ ] Demo mode passes all tests
+- [ ] Main application starts without errors
+- [ ] Browser automation works (Chrome opens)
+- [ ] Database operations work
+- [ ] UI displays correctly
 
-### Automated Cleanup
-```bash
-# Clean old files (run weekly)
-python yt_nara.py --cleanup --days 7
-```
+## 🎯 Next Steps
 
-## 🆘 Getting Help
+Once setup is complete:
 
-### Before Asking for Help
-1. Check this setup guide
-2. Review the main README.md
-3. Check logs for error messages
-4. Try the troubleshooting steps
+1. **Configure accounts**: Set up your social media accounts
+2. **Test with small runs**: Start with 1-2 cycles to verify everything works
+3. **Monitor logs**: Check `logs/yt_nara.log` for any issues
+4. **Scale up**: Once comfortable, run larger automation cycles
 
-### Support Channels
-- **GitHub Issues**: For bugs and feature requests
-- **GitHub Discussions**: For questions and community support
-- **Documentation**: Check the wiki for advanced topics
+## 💡 Tips for Success
 
-### Providing Information
-When asking for help, include:
-- Operating system and version
-- Python version
-- Error messages from logs
-- Steps to reproduce the issue
+- **Start small**: Test with 1-2 cycles first
+- **Use dedicated accounts**: Don't use personal social media accounts
+- **Monitor results**: Check upload success rates and adjust settings
+- **Keep backups**: Regular backups of your configuration and data
+- **Stay updated**: Keep dependencies updated for best compatibility
 
 ---
 
-**🎉 Congratulations!** You should now have YT-Nara fully set up and ready to use. Start with a simple topic and small number of cycles to test everything is working correctly.
+**🎉 You're all set!** YT-Nara is now ready to automate your content creation workflow.
