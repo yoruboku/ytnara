@@ -58,9 +58,6 @@ pip install -r requirements.txt --break-system-packages
 
 # Create directories and config files
 python3 yt_nara.py --setup
-
-# Test the installation
-python3 test_installation.py
 ```
 
 ### Option 3: Test First (Demo Mode)
@@ -69,7 +66,7 @@ python3 test_installation.py
 python3 demo.py
 
 # If demo passes, proceed with setup
-python3 yt_nara.py --setup
+python3 quick_start.py --setup
 ```
 
 ### Prerequisites
