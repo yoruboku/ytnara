@@ -13,27 +13,8 @@ from urllib.parse import urlparse, parse_qs
 import difflib
 from collections import Counter
 
-# Import will be resolved at runtime
-# from yt_nara import ContentItem
-
-# Create ContentItem class locally to avoid circular import
-from dataclasses import dataclass
-
-@dataclass
-class ContentItem:
-    """Represents a piece of content to be processed"""
-    url: str
-    title: str
-    platform: str
-    creator: str
-    keywords: List[str]
-    downloaded_path: Optional[str] = None
-    edited_path: Optional[str] = None
-    uploaded_platforms: Optional[List[str]] = None
-    
-    def __post_init__(self):
-        if self.uploaded_platforms is None:
-            self.uploaded_platforms = []
+# Import shared models
+from .models import ContentItem
 
 class ContentVerifier:
     """Content verification and relevance scoring"""

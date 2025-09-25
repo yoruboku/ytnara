@@ -1,0 +1,41 @@
+{
+  "app": {
+    "name": "YT-Nara",
+    "version": "1.0.0",
+    "debug": false,
+    "log_level": "INFO"
+  },
+  "content_discovery": {
+    "max_results_per_platform": 20,
+    "search_timeout": 30,
+    "relevance_threshold": 0.3
+  },
+  "video_processing": {
+    "max_video_duration": 60,
+    "output_format": "mp4",
+    "quality": "720p",
+    "watermark_enabled": true,
+    "watermark_text": "YT-Nara",
+    "watermark_position": "bottom_right"
+  },
+  "upload": {
+    "max_retries": 3,
+    "retry_delay": 30,
+    "upload_delay_min": 30,
+    "upload_delay_max": 60
+  },
+  "scheduler": {
+    "check_interval": 30,
+    "max_concurrent_uploads": 2
+  },
+  "platforms": {
+    "youtube": {
+      "enabled": true,
+      "accounts": 2
+    },
+    "instagram": {
+      "enabled": true,
+      "accounts": 2
+    }
+  }
+}

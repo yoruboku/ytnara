@@ -12,22 +12,8 @@ from datetime import datetime
 import logging
 from dataclasses import dataclass, asdict
 
-# Create ContentItem class locally to avoid circular import
-@dataclass
-class ContentItem:
-    """Represents a piece of content to be processed"""
-    url: str
-    title: str
-    platform: str
-    creator: str
-    keywords: List[str]
-    downloaded_path: Optional[str] = None
-    edited_path: Optional[str] = None
-    uploaded_platforms: Optional[List[str]] = None
-    
-    def __post_init__(self):
-        if self.uploaded_platforms is None:
-            self.uploaded_platforms = []
+# Import shared models
+from .models import ContentItem
 
 class ContentDatabase:
     """Database for tracking processed content and preventing duplicates"""

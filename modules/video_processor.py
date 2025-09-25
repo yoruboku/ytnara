@@ -17,9 +17,22 @@ import json
 import random
 import string
 
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, ImageClip
-from moviepy.video.fx import resize, crop
-from moviepy.audio.fx import volumex
+try:
+    from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, ImageClip
+    from moviepy.video.fx import resize, crop
+    from moviepy.audio.fx import volumex
+    MOVIEPY_AVAILABLE = True
+except ImportError:
+    # Fallback imports for different MoviePy versions
+    try:
+        from moviepy import VideoFileClip, TextClip, CompositeVideoClip, ImageClip
+        from moviepy.video.fx.resize import resize
+        from moviepy.video.fx.crop import crop
+        from moviepy.audio.fx.volumex import volumex
+        MOVIEPY_AVAILABLE = True
+    except ImportError:
+        MOVIEPY_AVAILABLE = False
+        logging.warning("MoviePy not available - video editing will be disabled")
 import yt_dlp
 
 # Import will be resolved at runtime
@@ -79,21 +92,43 @@ class VideoProcessor:
             elif content_item.platform == "tiktok":
                 opts['format'] = 'best[ext=mp4]/best'
             
-            # Download the video
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                # Get video info first
-                info = await self._get_video_info(content_item.url, ydl)
-                if not info:
-                    logging.error(f"Could not get video info for: {content_item.url}")
-                    return None
-                
-                # Update content item with additional info
-                content_item.duration = info.get('duration', 0)
-                content_item.view_count = info.get('view_count', 0)
-                content_item.upload_date = info.get('upload_date', '')
-                
-                # Download the video
-                await self._download_video(content_item.url, ydl)
+            # Add retry logic and better error handling
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    # Download the video
+                    with yt_dlp.YoutubeDL(opts) as ydl:
+                        # Get video info first
+                        info = await self._get_video_info(content_item.url, ydl)
+                        if not info:
+                            logging.warning(f"Could not get video info for: {content_item.url} (attempt {attempt + 1})")
+                            if attempt < max_retries - 1:
+                                await asyncio.sleep(5)  # Wait before retry
+                                continue
+                            else:
+                                return None
+                        
+                        # Update content item with additional info
+                        content_item.duration = info.get('duration', 0)
+                        content_item.view_count = info.get('view_count', 0)
+                        content_item.upload_date = info.get('upload_date', '')
+                        
+                        # Skip very long videos
+                        if content_item.duration and content_item.duration > 600:  # 10 minutes
+                            logging.warning(f"Skipping long video ({content_item.duration}s): {content_item.url}")
+                            return None
+                        
+                        # Download the video
+                        await self._download_video(content_item.url, ydl)
+                        break  # Success, exit retry loop
+                        
+                except Exception as e:
+                    logging.warning(f"Download attempt {attempt + 1} failed: {str(e)}")
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(10)  # Wait before retry
+                        continue
+                    else:
+                        raise
             
             # Find the downloaded file
             downloaded_file = self._find_downloaded_file(safe_title, timestamp, unique_id)
@@ -106,6 +141,11 @@ class VideoProcessor:
                     return str(downloaded_file)
                 else:
                     logging.error(f"Downloaded file is corrupted: {downloaded_file}")
+                    # Try to clean up corrupted file
+                    try:
+                        downloaded_file.unlink()
+                    except Exception:
+                        pass
                     return None
             else:
                 logging.error(f"Could not find downloaded file for: {content_item.url}")
@@ -161,6 +201,10 @@ class VideoProcessor:
             if file_path.stat().st_size < 1024:  # Less than 1KB
                 return False
             
+            if not MOVIEPY_AVAILABLE:
+                # If MoviePy is not available, just check if file exists and has reasonable size
+                return file_path.exists() and file_path.stat().st_size > 1024
+            
             # Try to open with MoviePy
             loop = asyncio.get_event_loop()
             
@@ -183,6 +227,10 @@ class VideoProcessor:
     
     async def edit_video(self, content_item) -> Optional[str]:
         """Edit video with basic modifications to avoid copyright"""
+        if not MOVIEPY_AVAILABLE:
+            logging.warning("MoviePy not available - skipping video editing")
+            return content_item.downloaded_path
+        
         if not content_item.downloaded_path:
             logging.error("No downloaded file to edit")
             return None
