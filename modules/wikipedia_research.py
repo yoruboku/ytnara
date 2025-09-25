@@ -19,7 +19,17 @@ class WikipediaResearcher:
         self.session = None
         
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            },
+            timeout=aiohttp.ClientTimeout(total=30)
+        )
         return self
         
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -29,15 +39,29 @@ class WikipediaResearcher:
     async def research_topic(self, topic: str) -> List[str]:
         """Research a topic and extract relevant keywords"""
         if not self.session:
-            self.session = aiohttp.ClientSession()
+            self.session = aiohttp.ClientSession(
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'application/json',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
+                },
+                timeout=aiohttp.ClientTimeout(total=30)
+            )
             
         try:
+            # Add small delay to avoid rate limiting
+            await asyncio.sleep(0.5)
+            
             # Search for the topic
             search_results = await self._search_wikipedia(topic)
             
             if not search_results:
                 logging.warning(f"No Wikipedia results found for topic: {topic}")
-                return [topic]
+                # Return topic with common related terms as fallback
+                return [topic, f"{topic} edit", f"{topic} compilation", f"{topic} moments", f"{topic} clips"]
             
             # Get the main article
             main_page = search_results[0]['title']
@@ -219,7 +243,7 @@ class WikipediaResearcher:
             logging.error(f"Error getting topic summary: {str(e)}")
             return f"Error retrieving summary for {topic}"
     
-    def __del__(self):
-        """Cleanup when object is destroyed"""
+    async def cleanup(self):
+        """Cleanup session when done"""
         if self.session and not self.session.closed:
-            asyncio.create_task(self.session.close())
+            await self.session.close()

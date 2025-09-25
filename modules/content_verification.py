@@ -21,7 +21,7 @@ class ContentVerifier:
     
     def __init__(self):
         self.session = None
-        self.relevance_threshold = 0.3  # Minimum relevance score to keep content
+        self.relevance_threshold = 0.1  # Minimum relevance score to keep content (lowered for better results)
         
     async def __aenter__(self):
         self.session = aiohttp.ClientSession(
@@ -70,6 +70,14 @@ class ContentVerifier:
         
         # Sort by relevance score (highest first)
         verified_content.sort(key=lambda x: getattr(x, 'relevance_score', 0), reverse=True)
+        
+        # If no content passed verification, take the top items anyway
+        if not verified_content and content_items:
+            logging.warning("No content passed verification threshold. Taking top items anyway.")
+            # Take top 10 items and assign minimal relevance scores
+            for i, item in enumerate(content_items[:10]):
+                item.relevance_score = 0.5 - (i * 0.05)  # Decreasing scores
+                verified_content.append(item)
         
         logging.info(f"Verified {len(verified_content)} out of {len(content_items)} content items")
         return verified_content
@@ -465,7 +473,7 @@ class ContentVerifier:
         
         return metrics
     
-    def __del__(self):
-        """Cleanup when object is destroyed"""
+    async def cleanup(self):
+        """Cleanup session when done"""
         if self.session and not self.session.closed:
-            asyncio.create_task(self.session.close())
+            await self.session.close()

@@ -20,16 +20,15 @@ async def demo_wikipedia_research():
     try:
         from modules.wikipedia_research import WikipediaResearcher
         
-        researcher = WikipediaResearcher()
-        
-        # Test with a simple topic
-        topic = "anime"
-        print(f"Researching topic: {topic}")
-        
-        keywords = await researcher.research_topic(topic)
-        print(f"Found {len(keywords)} keywords:")
-        for i, keyword in enumerate(keywords[:10], 1):  # Show first 10
-            print(f"  {i}. {keyword}")
+        async with WikipediaResearcher() as researcher:
+            # Test with a simple topic
+            topic = "anime"
+            print(f"Researching topic: {topic}")
+            
+            keywords = await researcher.research_topic(topic)
+            print(f"Found {len(keywords)} keywords:")
+            for i, keyword in enumerate(keywords[:10], 1):  # Show first 10
+                print(f"  {i}. {keyword}")
         
         print("✅ Wikipedia research demo completed successfully!")
         return True
@@ -46,20 +45,20 @@ async def demo_content_discovery():
     try:
         from modules.content_discovery import ContentDiscovery
         
-        discovery = ContentDiscovery()
-        
-        # Test with simple parameters
-        topic = "anime"
-        keywords = ["anime", "manga", "japan", "animation"]
-        print(f"Discovering content for topic: {topic}")
-        
-        content_items = await discovery.discover_content(topic, keywords)
-        print(f"Discovered {len(content_items)} content items:")
-        
-        for i, item in enumerate(content_items[:5], 1):  # Show first 5
-            print(f"  {i}. {item.title} ({item.platform})")
-            print(f"     Creator: {item.creator}")
-            print(f"     URL: {item.url}")
+        async with ContentDiscovery() as discovery:
+            # Test with simple parameters
+            topic = "anime"
+            keywords = ["anime", "manga", "japan", "animation"]
+            print(f"Discovering content for topic: {topic}")
+            
+            content_items = await discovery.discover_content(topic, keywords)
+            
+            print(f"Discovered {len(content_items)} content items:")
+            
+            for i, item in enumerate(content_items[:5], 1):  # Show first 5
+                print(f"  {i}. {item.title} ({item.platform})")
+                print(f"     Creator: {item.creator}")
+                print(f"     URL: {item.url}")
         
         print("✅ Content discovery demo completed successfully!")
         return True
@@ -77,22 +76,21 @@ async def demo_content_verification():
         from modules.content_verification import ContentVerifier
         from modules.models import ContentItem
         
-        verifier = ContentVerifier()
-        
-        # Create a test content item
-        test_content = ContentItem(
-            url="https://www.youtube.com/watch?v=test",
-            title="Test Anime Video",
-            platform="youtube",
-            creator="TestCreator",
-            keywords=["anime", "test"]
-        )
-        
-        keywords = ["anime", "manga", "japan"]
-        print(f"Verifying content: {test_content.title}")
-        
-        # This will mostly test the verification logic without making actual requests
-        verified_content = await verifier.verify_content([test_content], keywords)
+        async with ContentVerifier() as verifier:
+            # Create a test content item
+            test_content = ContentItem(
+                url="https://www.youtube.com/watch?v=test",
+                title="Test Anime Video",
+                platform="youtube",
+                creator="TestCreator",
+                keywords=["anime", "test"]
+            )
+            
+            keywords = ["anime", "manga", "japan"]
+            print(f"Verifying content: {test_content.title}")
+            
+            # This will mostly test the verification logic without making actual requests
+            verified_content = await verifier.verify_content([test_content], keywords)
         
         print(f"Verification completed for {len(verified_content)} items")
         print("✅ Content verification demo completed successfully!")

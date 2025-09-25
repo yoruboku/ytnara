@@ -100,28 +100,41 @@ class YTNara:
         """Run the main automation process"""
         self.ui.print_info(f"Starting YT-Nara automation for topic: {topic}")
         
-        # Step 1: Research topic on Wikipedia
-        self.ui.print_step("Researching topic on Wikipedia...")
-        keywords = await self.wiki_researcher.research_topic(topic)
-        self.ui.print_success(f"Found {len(keywords)} relevant keywords")
-        
-        # Step 2: Discover content across platforms
-        self.ui.print_step("Discovering content across platforms...")
-        discovered_content = await self.content_discovery.discover_content(topic, keywords)
-        self.ui.print_success(f"Discovered {len(discovered_content)} potential content items")
-        
-        # Step 3: Verify and filter content
-        self.ui.print_step("Verifying content relevance...")
-        verified_content = await self.content_verifier.verify_content(discovered_content, keywords)
-        self.ui.print_success(f"Verified {len(verified_content)} relevant content items")
-        
-        # Step 4: Process content in cycles
-        if daily_frequency:
-            # Schedule for daily execution
-            await self.schedule_daily_execution(verified_content, cycles, daily_frequency)
-        else:
-            # Run all cycles immediately
-            await self.run_cycles(verified_content, cycles)
+        try:
+            # Step 1: Research topic on Wikipedia
+            self.ui.print_step("Researching topic on Wikipedia...")
+            async with self.wiki_researcher:
+                keywords = await self.wiki_researcher.research_topic(topic)
+            self.ui.print_success(f"Found {len(keywords)} relevant keywords")
+            
+            # Step 2: Discover content across platforms
+            self.ui.print_step("Discovering content across platforms...")
+            async with self.content_discovery:
+                discovered_content = await self.content_discovery.discover_content(topic, keywords)
+            self.ui.print_success(f"Discovered {len(discovered_content)} potential content items")
+            
+            # Step 3: Verify and filter content
+            self.ui.print_step("Verifying content relevance...")
+            async with self.content_verifier:
+                verified_content = await self.content_verifier.verify_content(discovered_content, keywords)
+            self.ui.print_success(f"Verified {len(verified_content)} relevant content items")
+            
+            # Step 4: Process content in cycles
+            if daily_frequency:
+                # Schedule for daily execution
+                await self.schedule_daily_execution(verified_content, cycles, daily_frequency)
+            else:
+                # Run all cycles immediately
+                await self.run_cycles(verified_content, cycles)
+                
+        finally:
+            # Ensure all sessions are properly closed
+            try:
+                await self.wiki_researcher.cleanup()
+                await self.content_discovery.cleanup()
+                await self.content_verifier.cleanup()
+            except Exception as e:
+                logging.warning(f"Error during cleanup: {str(e)}")
     
     async def run_cycles(self, content_list: List[ContentItem], cycles: int):
         """Run the specified number of cycles"""
