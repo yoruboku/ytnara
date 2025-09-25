@@ -29,23 +29,8 @@ logging.basicConfig(
 # Create logs directory
 Path('logs').mkdir(exist_ok=True)
 
-@dataclass
-class ContentItem:
-    """Represents a piece of content to be processed"""
-    url: str
-    title: str
-    platform: str
-    creator: str
-    keywords: List[str]
-    downloaded_path: Optional[str] = None
-    edited_path: Optional[str] = None
-    uploaded_platforms: Optional[List[str]] = None
-    
-    def __post_init__(self):
-        if self.uploaded_platforms is None:
-            self.uploaded_platforms = []
-
-# Import custom modules after ContentItem is defined
+# Import custom modules
+from modules.models import ContentItem
 from modules.wikipedia_research import WikipediaResearcher
 from modules.content_discovery import ContentDiscovery
 from modules.content_verification import ContentVerifier

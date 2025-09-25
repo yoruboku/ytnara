@@ -14,26 +14,8 @@ from datetime import datetime, timedelta
 import random
 from dataclasses import dataclass
 
-# Import will be resolved at runtime
-# from yt_nara import ContentItem
-
-# Create ContentItem class locally to avoid circular import
-
-@dataclass
-class ContentItem:
-    """Represents a piece of content to be processed"""
-    url: str
-    title: str
-    platform: str
-    creator: str
-    keywords: List[str]
-    downloaded_path: Optional[str] = None
-    edited_path: Optional[str] = None
-    uploaded_platforms: Optional[List[str]] = None
-    
-    def __post_init__(self):
-        if self.uploaded_platforms is None:
-            self.uploaded_platforms = []
+# Import shared models
+from .models import ContentItem
 
 class ContentDiscovery:
     """Content discovery across multiple platforms"""
@@ -55,7 +37,7 @@ class ContentDiscovery:
         if self.session:
             await self.session.close()
     
-    async def discover_content(self, topic: str, keywords: List[str]) -> List:
+    async def discover_content(self, topic: str, keywords: List[str]) -> List[ContentItem]:
         """Discover content across all platforms"""
         if not self.session:
             self.session = aiohttp.ClientSession(
@@ -116,7 +98,7 @@ class ContentDiscovery:
         
         return list(set(queries))  # Remove duplicates
     
-    async def _discover_youtube_content(self, query: str) -> List:
+    async def _discover_youtube_content(self, query: str) -> List[ContentItem]:
         """Discover content from YouTube"""
         content_items = []
         
@@ -138,7 +120,7 @@ class ContentDiscovery:
         
         return content_items
     
-    def _extract_youtube_videos(self, html_content: str, query: str) -> List:
+    def _extract_youtube_videos(self, html_content: str, query: str) -> List[ContentItem]:
         """Extract video information from YouTube HTML"""
         content_items = []
         
@@ -186,7 +168,28 @@ class ContentDiscovery:
         
         return content_items
     
-    async def _discover_instagram_content(self, query: str) -> List:
+    def _clean_title(self, title: str) -> str:
+        """Clean and normalize video titles"""
+        if not title:
+            return "Untitled Video"
+        
+        # Remove HTML entities and escape sequences
+        title = title.replace('&amp;', '&')
+        title = title.replace('&lt;', '<')
+        title = title.replace('&gt;', '>')
+        title = title.replace('&quot;', '"')
+        title = title.replace('&#39;', "'")
+        
+        # Remove excessive whitespace
+        title = ' '.join(title.split())
+        
+        # Limit length
+        if len(title) > 100:
+            title = title[:97] + "..."
+        
+        return title.strip()
+    
+    async def _discover_instagram_content(self, query: str) -> List[ContentItem]:
         """Discover content from Instagram"""
         content_items = []
         
@@ -208,7 +211,7 @@ class ContentDiscovery:
         
         return content_items
     
-    def _extract_instagram_posts(self, html_content: str, query: str, hashtag: str) -> List:
+    def _extract_instagram_posts(self, html_content: str, query: str, hashtag: str) -> List[ContentItem]:
         """Extract post information from Instagram HTML"""
         content_items = []
         
@@ -287,7 +290,7 @@ class ContentDiscovery:
         
         return content_items
     
-    async def _discover_tiktok_content(self, query: str) -> List:
+    async def _discover_tiktok_content(self, query: str) -> List[ContentItem]:
         """Discover content from TikTok"""
         content_items = []
         
@@ -309,7 +312,7 @@ class ContentDiscovery:
         
         return content_items
     
-    def _extract_tiktok_videos(self, html_content: str, query: str, hashtag: str) -> List:
+    def _extract_tiktok_videos(self, html_content: str, query: str, hashtag: str) -> List[ContentItem]:
         """Extract video information from TikTok HTML"""
         content_items = []
         
@@ -358,7 +361,7 @@ class ContentDiscovery:
         
         return content_items
     
-    def _remove_duplicates(self, content_items: List) -> List:
+    def _remove_duplicates(self, content_items: List[ContentItem]) -> List[ContentItem]:
         """Remove duplicate content items"""
         seen_urls = set()
         unique_items = []

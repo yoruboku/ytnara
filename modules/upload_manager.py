@@ -22,22 +22,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from dataclasses import dataclass
 
-# Create ContentItem class locally to avoid circular import
-@dataclass
-class ContentItem:
-    """Represents a piece of content to be processed"""
-    url: str
-    title: str
-    platform: str
-    creator: str
-    keywords: List[str]
-    downloaded_path: Optional[str] = None
-    edited_path: Optional[str] = None
-    uploaded_platforms: Optional[List[str]] = None
-    
-    def __post_init__(self):
-        if self.uploaded_platforms is None:
-            self.uploaded_platforms = []
+# Import shared models
+from .models import ContentItem
 
 class UploadManager:
     """Automated upload management for multiple platforms"""
@@ -94,21 +80,55 @@ class UploadManager:
         user_data_dir = self.session_dir / platform / account_name
         user_data_dir.mkdir(parents=True, exist_ok=True)
         
+        # Chrome options for better compatibility and stealth
         options.add_argument(f"--user-data-dir={user_data_dir}")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--disable-web-security")
+        options.add_argument("--disable-features=VizDisplayCompositor")
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-plugins")
+        options.add_argument("--disable-images")
+        options.add_argument("--disable-javascript")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--start-maximized")
+        
+        # Experimental options for stealth
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
+        options.add_experimental_option("prefs", {
+            "profile.default_content_setting_values.notifications": 2,
+            "profile.default_content_settings.popups": 0,
+            "profile.managed_default_content_settings.images": 2
+        })
         
         # Set user agent to avoid detection
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
-        # Create driver
-        driver = webdriver.Chrome(options=options)
-        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        
-        return driver
+        try:
+            # Try to create driver with ChromeDriverManager for automatic driver management
+            try:
+                from webdriver_manager.chrome import ChromeDriverManager
+                from selenium.webdriver.chrome.service import Service
+                service = Service(ChromeDriverManager().install())
+                driver = webdriver.Chrome(service=service, options=options)
+            except ImportError:
+                # Fallback to system ChromeDriver
+                driver = webdriver.Chrome(options=options)
+            
+            # Execute stealth scripts
+            driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+                "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            })
+            
+            return driver
+            
+        except Exception as e:
+            logging.error(f"Error creating Chrome driver: {str(e)}")
+            raise
     
     async def initialize_sessions(self):
         """Initialize browser sessions for all accounts"""
