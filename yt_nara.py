@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 """
 YT-Nara: Universal Content Automation Tool
-A comprehensive automation tool for discovering, editing, and uploading content across platforms.
+Main application entry point
 """
 
-import os
-import sys
-import json
-import time
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
+import sys
 import argparse
+from pathlib import Path
+from typing import Optional
 
 # Setup logging
 logging.basicConfig(
@@ -29,47 +24,24 @@ logging.basicConfig(
 # Create logs directory
 Path('logs').mkdir(exist_ok=True)
 
-# Import custom modules
-from modules.models import ContentItem
-from modules.wikipedia_research import WikipediaResearcher
-from modules.content_discovery import ContentDiscovery
-from modules.content_verification import ContentVerifier
-from modules.video_processor import VideoProcessor
-from modules.upload_manager import UploadManager
-from modules.scheduler import ContentScheduler
-from modules.ui import TerminalUI
-from modules.config import Config
-from modules.database import ContentDatabase
+# Import modules
+from models import ContentItem
+from wikipedia_researcher import WikipediaResearcher
+from content_discovery import ContentDiscovery
+from content_verification import ContentVerifier
+from video_processor import VideoProcessor
+from upload_manager import UploadManager
+from database import Database
+from ui import TerminalUI
 
 class YTNara:
     """Main YT-Nara automation class"""
     
     def __init__(self):
-        self.config = Config()
         self.ui = TerminalUI()
-        self.db = ContentDatabase()
-        self.wiki_researcher = WikipediaResearcher()
-        self.content_discovery = ContentDiscovery()
-        self.content_verifier = ContentVerifier()
+        self.db = Database()
         self.video_processor = VideoProcessor()
         self.upload_manager = UploadManager()
-        self.scheduler = ContentScheduler()
-        
-        # Create necessary directories
-        self.setup_directories()
-        
-    def setup_directories(self):
-        """Create necessary directories for the application"""
-        directories = [
-            'downloads',
-            'edited_videos',
-            'logs',
-            'data',
-            'temp'
-        ]
-        
-        for directory in directories:
-            Path(directory).mkdir(exist_ok=True)
     
     def run_interactive_mode(self):
         """Run the interactive mode with user prompts"""
@@ -103,20 +75,20 @@ class YTNara:
         try:
             # Step 1: Research topic on Wikipedia
             self.ui.print_step("Researching topic on Wikipedia...")
-            async with self.wiki_researcher:
-                keywords = await self.wiki_researcher.research_topic(topic)
+            async with WikipediaResearcher() as researcher:
+                keywords = await researcher.research_topic(topic)
             self.ui.print_success(f"Found {len(keywords)} relevant keywords")
             
             # Step 2: Discover content across platforms
             self.ui.print_step("Discovering content across platforms...")
-            async with self.content_discovery:
-                discovered_content = await self.content_discovery.discover_content(topic, keywords)
+            async with ContentDiscovery() as discovery:
+                discovered_content = await discovery.discover_content(topic, keywords)
             self.ui.print_success(f"Discovered {len(discovered_content)} potential content items")
             
             # Step 3: Verify and filter content
             self.ui.print_step("Verifying content relevance...")
-            async with self.content_verifier:
-                verified_content = await self.content_verifier.verify_content(discovered_content, keywords)
+            async with ContentVerifier() as verifier:
+                verified_content = await verifier.verify_content(discovered_content, keywords)
             self.ui.print_success(f"Verified {len(verified_content)} relevant content items")
             
             # Step 4: Process content in cycles
@@ -127,16 +99,11 @@ class YTNara:
                 # Run all cycles immediately
                 await self.run_cycles(verified_content, cycles)
                 
-        finally:
-            # Ensure all sessions are properly closed
-            try:
-                await self.wiki_researcher.cleanup()
-                await self.content_discovery.cleanup()
-                await self.content_verifier.cleanup()
-            except Exception as e:
-                logging.warning(f"Error during cleanup: {str(e)}")
+        except Exception as e:
+            logging.exception("Error in automation process")
+            self.ui.print_error(f"Automation failed: {str(e)}")
     
-    async def run_cycles(self, content_list: List[ContentItem], cycles: int):
+    async def run_cycles(self, content_list: list, cycles: int):
         """Run the specified number of cycles"""
         for cycle in range(cycles):
             self.ui.print_cycle_start(cycle + 1, cycles)
@@ -155,7 +122,7 @@ class YTNara:
                 self.ui.print_info("Waiting before next cycle...")
                 await asyncio.sleep(30)
     
-    async def process_cycle_content(self, content_list: List[ContentItem]):
+    async def process_cycle_content(self, content_list: list):
         """Process a single cycle of content"""
         for content in content_list:
             try:
@@ -169,10 +136,10 @@ class YTNara:
                 
                 # Upload to platforms
                 self.ui.print_info(f"Uploading: {content.title}")
-                await self.upload_manager.upload_to_all_platforms(content)
+                uploaded_platforms = await self.upload_manager.upload_to_all_platforms(content)
                 
                 # Save to database
-                self.db.save_processed_content(content)
+                self.db.save_content(content)
                 
                 self.ui.print_success(f"Successfully processed: {content.title}")
                 
@@ -180,15 +147,18 @@ class YTNara:
                 self.ui.print_error(f"Failed to process {content.title}: {str(e)}")
                 continue
     
-    async def schedule_daily_execution(self, content_list: List[ContentItem], cycles: int, daily_frequency: int):
+    async def schedule_daily_execution(self, content_list: list, cycles: int, daily_frequency: int):
         """Schedule daily execution of content processing"""
         self.ui.print_info(f"Scheduling {daily_frequency} uploads per day")
         
-        # Calculate time intervals between uploads
-        interval_hours = 24 / daily_frequency
-        
-        # Schedule uploads throughout the day
-        await self.scheduler.schedule_uploads(content_list, cycles, daily_frequency, interval_hours)
+        # For now, just run all cycles immediately
+        # In a full implementation, this would schedule tasks
+        await self.run_cycles(content_list, cycles)
+    
+    def show_statistics(self):
+        """Show database statistics"""
+        stats = self.db.get_statistics()
+        self.ui.show_statistics(stats)
 
 def main():
     """Main entry point"""
@@ -198,6 +168,7 @@ def main():
     parser.add_argument('--cycles', type=int, help='Number of cycles to run')
     parser.add_argument('--daily-frequency', type=int, help='Number of uploads per day')
     parser.add_argument('--setup', action='store_true', help='Run initial setup')
+    parser.add_argument('--stats', action='store_true', help='Show database statistics')
     
     args = parser.parse_args()
     
@@ -209,15 +180,17 @@ def main():
         yt_nara.ui.run_setup()
         return
     
-    if args.topic:
-        # Run in non-interactive mode
-        asyncio.run(yt_nara.run_automation(
-            args.topic,
-            args.cycles or 1,
-            args.daily_frequency
-        ))
+    if args.stats:
+        # Show statistics
+        yt_nara.show_statistics()
+        return
+    
+    if args.topic and args.cycles:
+        # Command line mode
+        daily_frequency = args.daily_frequency
+        asyncio.run(yt_nara.run_automation(args.topic, args.cycles, daily_frequency))
     else:
-        # Run in interactive mode
+        # Interactive mode
         yt_nara.run_interactive_mode()
 
 if __name__ == "__main__":

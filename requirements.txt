@@ -1,36 +1,12 @@
-# YT-Nara Requirements
-# Core dependencies for content automation
-
-# Video processing and downloading
-yt-dlp>=2023.12.30
-moviepy>=1.0.3
-
-# Web automation
+aiohttp>=3.8.0
+asyncio
+rich>=13.0.0
+colorama>=0.4.6
+pyfiglet>=0.8
+yt-dlp>=2023.7.6
 selenium>=4.15.0
 webdriver-manager>=4.0.0
-
-# HTTP requests and async support
-aiohttp>=3.9.0
-requests>=2.31.0
-
-# UI and terminal enhancement
-rich>=13.7.0
-colorama>=0.4.6
-pyfiglet>=1.0.2
-
-# Data processing
-pandas>=2.1.0
-numpy>=1.24.0
-
-# Note: Using built-in scheduling system
-
-# Image processing (for thumbnails)
-Pillow>=10.1.0
-
-# Optional: For better video codec support
-imageio-ffmpeg>=0.4.9
-
-# Development dependencies (optional)
-pytest>=7.4.0
-black>=23.11.0
-flake8>=6.1.0
+moviepy>=1.0.3
+pillow>=10.0.0
+python-dotenv>=1.0.0
+brotli>=1.0.9

@@ -3,50 +3,44 @@ Content Discovery Module
 Handles content discovery across YouTube, Instagram, and TikTok platforms
 """
 
-import asyncio
 import aiohttp
+import asyncio
 import re
 import json
 import logging
 from typing import List, Dict, Optional, Set
-from urllib.parse import quote, urlencode
-from datetime import datetime, timedelta
-import random
-from dataclasses import dataclass
-
-# Import shared models
-from .models import ContentItem
+from urllib.parse import quote
+from models import ContentItem
 
 class ContentDiscovery:
-    """Content discovery across multiple platforms"""
+    """Content discovery across multiple platforms with robust error handling"""
     
     def __init__(self):
         self.session = None
         self.discovered_urls = set()  # Prevent duplicates
         
     async def __aenter__(self):
+        """Async context manager entry"""
         self.session = aiohttp.ClientSession(
             headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate',  # Removed brotli (br)
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
             },
             timeout=aiohttp.ClientTimeout(total=30)
         )
         return self
         
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self.session:
+        """Async context manager exit"""
+        if self.session and not self.session.closed:
             await self.session.close()
     
     async def discover_content(self, topic: str, keywords: List[str]) -> List[ContentItem]:
         """Discover content across all platforms"""
-        if not self.session:
-            self.session = aiohttp.ClientSession(
-                headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                },
-                timeout=aiohttp.ClientTimeout(total=30)
-            )
-        
         all_content = []
         
         # Create search queries from topic and keywords
@@ -84,12 +78,12 @@ class ContentDiscovery:
         
         # Add topic with common content-related terms
         content_terms = ['edit', 'compilation', 'moments', 'clips', 'best', 'funny', 'epic', 'memes', 'viral', 'trending']
-        for term in content_terms[:5]:  # Increased limit
+        for term in content_terms[:5]:
             queries.append(f"{topic} {term}")
         
         # Add top keywords (with better filtering)
-        for keyword in keywords[:8]:  # Use top 8 keywords
-            if len(keyword) > 2 and keyword.lower() != topic.lower():  # Skip very short keywords and duplicates
+        for keyword in keywords[:8]:
+            if len(keyword) > 2 and keyword.lower() != topic.lower():
                 queries.append(f"{topic} {keyword}")
         
         # Add combined queries
@@ -109,7 +103,6 @@ class ContentDiscovery:
         content_items = []
         
         try:
-            # Use YouTube's search suggestions and trending
             search_url = f"https://www.youtube.com/results?search_query={quote(query)}"
             
             async with self.session.get(search_url) as response:
@@ -117,6 +110,8 @@ class ContentDiscovery:
                     html_content = await response.text()
                     video_data = self._extract_youtube_videos(html_content, query)
                     content_items.extend(video_data)
+                else:
+                    logging.warning(f"YouTube search returned status {response.status}")
             
             # Add small delay to avoid rate limiting
             await asyncio.sleep(1)
@@ -139,10 +134,6 @@ class ContentDiscovery:
                 r'videoId":"([^"]+)".*?title":"([^"]+)".*?channelName":"([^"]+)"',
                 # Pattern 3: Simple video ID extraction
                 r'"videoId":"([^"]+)"',
-                # Pattern 4: Title extraction
-                r'"title":{"runs":\[{"text":"([^"]+)"}',
-                # Pattern 5: Channel extraction
-                r'"ownerText":{"runs":\[{"text":"([^"]+)"'
             ]
             
             # Try each pattern
@@ -151,7 +142,7 @@ class ContentDiscovery:
             channels = []
             
             # Extract video IDs
-            for pattern in patterns[:3]:
+            for pattern in patterns:
                 matches = re.findall(pattern, html_content)
                 for match in matches:
                     if isinstance(match, tuple):
@@ -261,6 +252,8 @@ class ContentDiscovery:
                     html_content = await response.text()
                     instagram_data = self._extract_instagram_posts(html_content, query, hashtag)
                     content_items.extend(instagram_data)
+                else:
+                    logging.warning(f"Instagram search returned status {response.status}")
             
             await asyncio.sleep(1)
             
@@ -275,7 +268,6 @@ class ContentDiscovery:
         
         try:
             # Extract post data from Instagram's page data
-            # Instagram uses GraphQL, so we look for the data in script tags
             script_pattern = r'window\._sharedData = ({.*?});'
             script_match = re.search(script_pattern, html_content)
             
@@ -299,7 +291,7 @@ class ContentDiscovery:
                                 caption_edges = node.get('edge_media_to_caption', {}).get('edges', [])
                                 title = ""
                                 if caption_edges:
-                                    title = caption_edges[0].get('node', {}).get('text', '')[:100]  # First 100 chars
+                                    title = caption_edges[0].get('node', {}).get('text', '')[:100]
                                 
                                 if not title:
                                     title = f"Instagram post about {query}"
@@ -328,7 +320,7 @@ class ContentDiscovery:
                 shortcode_pattern = r'/p/([A-Za-z0-9_-]+)/'
                 shortcodes = re.findall(shortcode_pattern, html_content)
                 
-                for shortcode in list(set(shortcodes))[:10]:  # Remove duplicates and limit
+                for shortcode in list(set(shortcodes))[:10]:
                     if shortcode not in self.discovered_urls:
                         url = f"https://www.instagram.com/p/{shortcode}/"
                         
@@ -353,7 +345,6 @@ class ContentDiscovery:
         content_items = []
         
         try:
-            # TikTok search (limited without API)
             hashtag = query.replace(' ', '').lower()
             search_url = f"https://www.tiktok.com/tag/{hashtag}"
             
@@ -362,6 +353,8 @@ class ContentDiscovery:
                     html_content = await response.text()
                     tiktok_data = self._extract_tiktok_videos(html_content, query, hashtag)
                     content_items.extend(tiktok_data)
+                else:
+                    logging.warning(f"TikTok search returned status {response.status}")
             
             await asyncio.sleep(1)
             
@@ -379,7 +372,7 @@ class ContentDiscovery:
             video_pattern = r'https://www\.tiktok\.com/@([^/]+)/video/(\d+)'
             matches = re.findall(video_pattern, html_content)
             
-            for username, video_id in matches[:15]:  # Limit to 15 videos
+            for username, video_id in matches[:15]:
                 if video_id not in self.discovered_urls:
                     url = f"https://www.tiktok.com/@{username}/video/{video_id}"
                     
@@ -430,68 +423,3 @@ class ContentDiscovery:
                 unique_items.append(item)
         
         return unique_items
-    
-    async def get_trending_topics(self, platform: str = "all") -> List[str]:
-        """Get trending topics for content discovery"""
-        trending_topics = []
-        
-        try:
-            if platform in ["all", "youtube"]:
-                youtube_trending = await self._get_youtube_trending()
-                trending_topics.extend(youtube_trending)
-            
-            if platform in ["all", "tiktok"]:
-                tiktok_trending = await self._get_tiktok_trending()
-                trending_topics.extend(tiktok_trending)
-            
-        except Exception as e:
-            logging.error(f"Error getting trending topics: {str(e)}")
-        
-        return list(set(trending_topics))  # Remove duplicates
-    
-    async def _get_youtube_trending(self) -> List[str]:
-        """Get trending topics from YouTube"""
-        try:
-            trending_url = "https://www.youtube.com/feed/trending"
-            
-            async with self.session.get(trending_url) as response:
-                if response.status == 200:
-                    html_content = await response.text()
-                    
-                    # Extract video titles from trending page
-                    title_pattern = r'"title":{"runs":\[{"text":"([^"]+)"}'
-                    titles = re.findall(title_pattern, html_content)
-                    
-                    # Extract keywords from titles
-                    keywords = []
-                    for title in titles[:20]:  # Top 20 trending videos
-                        words = re.findall(r'\b[A-Za-z]{3,}\b', title)
-                        keywords.extend(words)
-                    
-                    return list(set([kw.lower() for kw in keywords]))[:10]
-        
-        except Exception as e:
-            logging.error(f"Error getting YouTube trending: {str(e)}")
-        
-        return []
-    
-    async def _get_tiktok_trending(self) -> List[str]:
-        """Get trending hashtags from TikTok"""
-        try:
-            # TikTok trending is harder to scrape, so we'll use common trending topics
-            common_trending = [
-                'fyp', 'viral', 'trending', 'funny', 'comedy', 'dance', 'music',
-                'lifestyle', 'food', 'travel', 'fashion', 'beauty', 'fitness'
-            ]
-            
-            return common_trending
-        
-        except Exception as e:
-            logging.error(f"Error getting TikTok trending: {str(e)}")
-        
-        return []
-    
-    async def cleanup(self):
-        """Cleanup session when done"""
-        if self.session and not self.session.closed:
-            await self.session.close()

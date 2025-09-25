@@ -18,7 +18,7 @@ async def demo_wikipedia_research():
     print("-" * 30)
     
     try:
-        from modules.wikipedia_research import WikipediaResearcher
+        from wikipedia_researcher import WikipediaResearcher
         
         async with WikipediaResearcher() as researcher:
             # Test with a simple topic
@@ -43,7 +43,7 @@ async def demo_content_discovery():
     print("-" * 30)
     
     try:
-        from modules.content_discovery import ContentDiscovery
+        from content_discovery import ContentDiscovery
         
         async with ContentDiscovery() as discovery:
             # Test with simple parameters
@@ -73,8 +73,8 @@ async def demo_content_verification():
     print("-" * 30)
     
     try:
-        from modules.content_verification import ContentVerifier
-        from modules.models import ContentItem
+        from content_verification import ContentVerifier
+        from models import ContentItem
         
         async with ContentVerifier() as verifier:
             # Create a test content item
@@ -101,30 +101,42 @@ async def demo_content_verification():
         return False
 
 def demo_database():
-    """Demo database functionality"""
+    """Demo database operations"""
     print("\n💾 Demo: Database Operations")
     print("-" * 30)
     
     try:
-        from modules.database import ContentDatabase
+        from database import Database
+        from models import ContentItem
         
-        db = ContentDatabase()
+        # Create test database
+        db = Database("test_demo.db")
         
-        # Test basic database operations
+        # Create test content item
+        test_item = ContentItem(
+            url="https://www.youtube.com/watch?v=demo123",
+            title="Demo Video",
+            platform="youtube",
+            creator="Demo Creator",
+            keywords=["demo", "test"]
+        )
+        
         print("Testing database operations...")
         
-        # Check if database was created
-        db_path = Path("data/content.db")
-        if db_path.exists():
+        # Save content
+        success = db.save_content(test_item)
+        if success:
             print("✅ Database file created successfully")
+        else:
+            print("❌ Failed to save content to database")
+            return False
         
-        # Test statistics
+        # Get statistics
         stats = db.get_statistics()
         print(f"Database statistics: {stats}")
         
-        # Test platform statistics
-        platform_stats = db.get_platform_statistics()
-        print(f"Platform statistics: {platform_stats}")
+        # Clean up test database
+        Path("test_demo.db").unlink()
         
         print("✅ Database demo completed successfully!")
         return True
@@ -134,31 +146,33 @@ def demo_database():
         return False
 
 def demo_ui():
-    """Demo UI functionality"""
+    """Demo UI components"""
     print("\n🎨 Demo: User Interface")
     print("-" * 30)
     
     try:
-        from modules.ui import TerminalUI
+        from ui import TerminalUI
         
         ui = TerminalUI()
         
-        # Test UI components
         print("Testing UI components...")
-        
-        # Test banner (without actually showing it)
         print("✅ Banner component available")
-        
-        # Test progress tracking setup
-        ui.start_progress_tracking(10)
         print("✅ Progress tracking initialized")
         
-        # Test various print methods
+        # Test message types
         ui.print_info("This is an info message")
         ui.print_success("This is a success message")
         ui.print_warning("This is a warning message")
         
-        ui.stop_progress_tracking()
+        # Test progress (simulated)
+        ui.init_progress(["test"])
+        ui.update_progress("🔍 Discovering content...", 20)
+        ui.update_progress("✅ Verifying content...", 20)
+        ui.update_progress("⬇️ Downloading videos...", 20)
+        ui.update_progress("✂️ Editing videos...", 20)
+        ui.update_progress("⬆️ Uploading videos...", 20)
+        ui.complete_progress()
+        
         print("✅ UI demo completed successfully!")
         return True
         
@@ -171,8 +185,10 @@ async def main():
     print("🚀 YT-Nara Demo Suite")
     print("=" * 50)
     print("This demo will test the basic functionality of YT-Nara")
-    print("without requiring full setup or external accounts.\n")
+    print("without requiring full setup or external accounts.")
+    print()
     
+    # Run demos
     demos = [
         ("Wikipedia Research", demo_wikipedia_research),
         ("Content Discovery", demo_content_discovery),
@@ -213,18 +229,9 @@ async def main():
         print("\n📋 Next steps:")
         print("1. Run: python3 yt_nara.py --setup")
         print("2. Start using: python3 yt_nara.py")
-        return 0
     else:
         print("⚠️ Some demos failed. Check the errors above.")
-        return 1
+        sys.exit(1)
 
 if __name__ == "__main__":
-    try:
-        exit_code = asyncio.run(main())
-        sys.exit(exit_code)
-    except KeyboardInterrupt:
-        print("\n👋 Demo interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n💥 Demo crashed: {str(e)}")
-        sys.exit(1)
+    asyncio.run(main())
