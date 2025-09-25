@@ -16,8 +16,47 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import argparse
 
-# Create logs directory first
-Path('logs').mkdir(exist_ok=True)
+# Create all necessary directories first
+required_dirs = ['logs', 'downloads', 'edited_videos', 'data', 'sessions', 'temp']
+for directory in required_dirs:
+    Path(directory).mkdir(exist_ok=True)
+
+# Create basic config files if they don't exist
+config_file = Path('data/config.json')
+accounts_file = Path('data/accounts.json')
+
+if not config_file.exists():
+    import json
+    default_config = {
+        "app": {"name": "YT-Nara", "version": "1.0.0"},
+        "video_processing": {
+            "max_video_duration": 60,
+            "watermark_text": "YT-Nara",
+            "watermark_position": "bottom_right"
+        },
+        "upload": {
+            "max_retries": 3,
+            "upload_delay_min": 30,
+            "upload_delay_max": 60
+        }
+    }
+    with open(config_file, 'w') as f:
+        json.dump(default_config, f, indent=2)
+
+if not accounts_file.exists():
+    import json
+    default_accounts = {
+        "youtube": [
+            {"name": "account1", "logged_in": False},
+            {"name": "account2", "logged_in": False}
+        ],
+        "instagram": [
+            {"name": "account1", "logged_in": False},
+            {"name": "account2", "logged_in": False}
+        ]
+    }
+    with open(accounts_file, 'w') as f:
+        json.dump(default_accounts, f, indent=2)
 
 # Setup logging
 logging.basicConfig(
@@ -45,30 +84,129 @@ class ContentItem:
         if self.uploaded_platforms is None:
             self.uploaded_platforms = []
 
-# Import custom modules after ContentItem is defined
-from modules.wikipedia_research import WikipediaResearcher
-from modules.content_discovery import ContentDiscovery
-from modules.content_verification import ContentVerifier
-from modules.video_processor import VideoProcessor
-from modules.upload_manager import UploadManager
-from modules.scheduler import ContentScheduler
-from modules.ui import TerminalUI
-from modules.config import Config
-from modules.database import ContentDatabase
+# Import custom modules with detailed error handling
+missing_deps = []
+modules_status = {}
+
+try:
+    from modules.config import Config
+    from modules.database import ContentDatabase
+    modules_status['basic'] = True
+except ImportError as e:
+    print(f"❌ Basic modules error: {e}")
+    modules_status['basic'] = False
+
+try:
+    from modules.wikipedia_research import WikipediaResearcher
+    modules_status['wikipedia'] = True
+except ImportError as e:
+    missing_deps.append(f"Wikipedia research: {e}")
+    modules_status['wikipedia'] = False
+
+try:
+    from modules.content_discovery import ContentDiscovery
+    modules_status['discovery'] = True
+except ImportError as e:
+    missing_deps.append(f"Content discovery: {e}")
+    modules_status['discovery'] = False
+
+try:
+    from modules.content_verification import ContentVerifier
+    modules_status['verification'] = True
+except ImportError as e:
+    missing_deps.append(f"Content verification: {e}")
+    modules_status['verification'] = False
+
+try:
+    from modules.video_processor import VideoProcessor
+    modules_status['video'] = True
+except ImportError as e:
+    missing_deps.append(f"Video processing: {e}")
+    modules_status['video'] = False
+
+try:
+    from modules.upload_manager import UploadManager
+    modules_status['upload'] = True
+except ImportError as e:
+    missing_deps.append(f"Upload manager: {e}")
+    modules_status['upload'] = False
+
+try:
+    from modules.scheduler import ContentScheduler
+    modules_status['scheduler'] = True
+except ImportError as e:
+    missing_deps.append(f"Scheduler: {e}")
+    modules_status['scheduler'] = False
+
+try:
+    from modules.ui import TerminalUI
+    modules_status['ui'] = True
+except ImportError as e:
+    missing_deps.append(f"UI: {e}")
+    modules_status['ui'] = False
+
+# Check if we have minimum required modules
+if not modules_status['basic']:
+    print("❌ Critical error: Basic modules not available!")
+    sys.exit(1)
+
+if missing_deps:
+    print("⚠️ Some modules have dependency issues:")
+    for dep in missing_deps:
+        print(f"   - {dep}")
+    print("\n🔧 Fixes:")
+    print("   1. Run: python3 setup.py")
+    print("   2. Or create virtual environment:")
+    print("      python3 -m venv myenv && source myenv/bin/activate && pip install -r requirements.txt")
+    print("   3. Or install manually:")
+    print("      pip install --user aiohttp selenium moviepy yt-dlp rich colorama pyfiglet Pillow imageio-ffmpeg")
+    
+    # Allow basic functionality if UI is available
+    if not modules_status['ui']:
+        sys.exit(1)
 
 class YTNara:
     """Main YT-Nara automation class"""
     
     def __init__(self):
         self.config = Config()
-        self.ui = TerminalUI()
         self.db = ContentDatabase()
-        self.wiki_researcher = WikipediaResearcher()
-        self.content_discovery = ContentDiscovery()
-        self.content_verifier = ContentVerifier()
-        self.video_processor = VideoProcessor()
-        self.upload_manager = UploadManager()
-        self.scheduler = ContentScheduler()
+        
+        # Initialize modules that are available
+        if modules_status.get('ui', False):
+            self.ui = TerminalUI()
+        else:
+            self.ui = None
+            
+        if modules_status.get('wikipedia', False):
+            self.wiki_researcher = WikipediaResearcher()
+        else:
+            self.wiki_researcher = None
+            
+        if modules_status.get('discovery', False):
+            self.content_discovery = ContentDiscovery()
+        else:
+            self.content_discovery = None
+            
+        if modules_status.get('verification', False):
+            self.content_verifier = ContentVerifier()
+        else:
+            self.content_verifier = None
+            
+        if modules_status.get('video', False):
+            self.video_processor = VideoProcessor()
+        else:
+            self.video_processor = None
+            
+        if modules_status.get('upload', False):
+            self.upload_manager = UploadManager()
+        else:
+            self.upload_manager = None
+            
+        if modules_status.get('scheduler', False):
+            self.scheduler = ContentScheduler()
+        else:
+            self.scheduler = None
         
         # Create necessary directories
         self.setup_directories()
@@ -88,6 +226,11 @@ class YTNara:
     
     def run_interactive_mode(self):
         """Run the interactive mode with user prompts"""
+        if not self.ui:
+            print("❌ UI module not available. Please install dependencies:")
+            print("   python3 setup.py")
+            return
+            
         self.ui.show_banner()
         
         try:
@@ -113,7 +256,33 @@ class YTNara:
     
     async def run_automation(self, topic: str, cycles: int, daily_frequency: Optional[int]):
         """Run the main automation process"""
-        self.ui.print_info(f"Starting YT-Nara automation for topic: {topic}")
+        # Check required modules
+        missing_modules = []
+        if not self.wiki_researcher:
+            missing_modules.append("Wikipedia research")
+        if not self.content_discovery:
+            missing_modules.append("Content discovery")
+        if not self.content_verifier:
+            missing_modules.append("Content verification")
+        if not self.video_processor:
+            missing_modules.append("Video processing")
+        if not self.upload_manager:
+            missing_modules.append("Upload management")
+            
+        if missing_modules:
+            print("❌ Cannot run automation - missing modules:")
+            for module in missing_modules:
+                print(f"   - {module}")
+            print("\n🔧 Fix by running:")
+            print("   python3 setup.py")
+            print("   OR create virtual environment:")
+            print("   python3 -m venv myenv && source myenv/bin/activate && pip install -r requirements.txt")
+            return
+            
+        if self.ui:
+            self.ui.print_info(f"Starting YT-Nara automation for topic: {topic}")
+        else:
+            print(f"Starting YT-Nara automation for topic: {topic}")
         
         # Step 1: Research topic on Wikipedia
         self.ui.print_step("Researching topic on Wikipedia...")

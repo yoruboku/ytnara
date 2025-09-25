@@ -32,31 +32,52 @@
 
 ## 🛠️ **SUPER EASY INSTALLATION**
 
-### One Command Setup (All Platforms)
+### 🚀 **One Command Setup**
 ```bash
 git clone <repository-url>
 cd yt-nara
-python3 setup_simple.py
+python3 setup.py
 ```
 
-**That's it! One command does everything - no complex setup, no API keys, no configuration files to edit.**
+**That's it! The script handles everything automatically including different Python environments.**
 
-### Alternative (if you have issues):
+### 🔧 **If You Have Issues (Alternative Methods)**
+
+**Option 1: Virtual Environment (Recommended)**
 ```bash
-# Quick fix for any setup issues
+git clone <repository-url>
+cd yt-nara
+python3 -m venv myenv
+source myenv/bin/activate  # Windows: myenv\Scripts\activate
+pip install -r requirements.txt
+python3 yt_nara.py
+```
+
+**Option 2: User Installation**
+```bash
+git clone <repository-url>
+cd yt-nara
+pip install --user -r requirements.txt
+python3 yt_nara.py
+```
+
+**Option 3: Quick Fix Script**
+```bash
 python3 quick_fix.py
 ```
 
-### What the setup script does:
-- ✅ Installs all free Python dependencies
-- ✅ Creates necessary directories
-- ✅ Sets up configuration files
-- ✅ Tests everything works
-- ✅ Ready to use immediately
+### ✅ **What the setup does:**
+- 🔍 **Auto-detects** your Python environment
+- 📦 **Installs** all free dependencies
+- 📁 **Creates** necessary directories  
+- ⚙️ **Sets up** configuration files
+- 🧪 **Tests** everything works
+- 🎯 **Ready to use** immediately
 
-### Optional (for full features):
-- **Chrome browser** - for automated uploading
-- **FFmpeg** - for video processing (the script will guide you)
+### 🎯 **Requirements:**
+- **Python 3.8+** (that's it!)
+- **Optional:** Chrome browser (for uploading)
+- **Optional:** FFmpeg (for video processing)
 
 ## 🚀 Quick Start
 

@@ -1,8 +1,7 @@
 {
   "app": {
     "name": "YT-Nara",
-    "version": "1.0.0",
-    "debug": false
+    "version": "1.0.0"
   },
   "video_processing": {
     "max_video_duration": 60,

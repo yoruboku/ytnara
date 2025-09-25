@@ -1,227 +1,161 @@
 #!/usr/bin/env python3
 """
-YT-Nara Installation Script
-Automates the installation and setup process
+YT-Nara One-Command Installer
+Run this after: git clone
 """
 
-import os
-import sys
 import subprocess
-import platform
+import sys
+import os
 from pathlib import Path
 
-def run_command(command, shell=False):
-    """Run a command and return success status"""
+def install_package(package):
+    """Install a single package"""
+    # Try normal pip first
     try:
-        result = subprocess.run(command, shell=shell, capture_output=True, text=True)
-        return result.returncode == 0, result.stdout, result.stderr
-    except Exception as e:
-        return False, "", str(e)
-
-def install_dependencies():
-    """Install Python dependencies"""
-    print("📦 Installing Python dependencies...")
-    
-    # Upgrade pip first
-    success, stdout, stderr = run_command([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
-    if not success:
-        print(f"⚠️ Warning: Could not upgrade pip: {stderr}")
-    
-    # Install requirements
-    success, stdout, stderr = run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-    
-    if success:
-        print("✅ Dependencies installed successfully")
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", package, "--quiet"
+        ])
         return True
-    else:
-        print(f"❌ Failed to install dependencies: {stderr}")
-        return False
-
-def create_directories():
-    """Create necessary directories"""
-    print("📁 Creating directories...")
-    
-    directories = [
-        'downloads',
-        'edited_videos',
-        'data',
-        'logs',
-        'sessions',
-        'temp'
-    ]
-    
-    for directory in directories:
-        Path(directory).mkdir(exist_ok=True)
-        print(f"✅ Created {directory}/")
-    
-    return True
-
-def check_system_dependencies():
-    """Check for system dependencies"""
-    print("🔍 Checking system dependencies...")
-    
-    # Check Python version
-    if sys.version_info < (3, 8):
-        print(f"❌ Python 3.8+ required, found {sys.version}")
-        return False
-    else:
-        print(f"✅ Python {sys.version.split()[0]}")
-    
-    # Check for Chrome/Chromium
-    chrome_paths = [
-        "google-chrome",
-        "chromium-browser",
-        "chromium",
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
-    ]
-    
-    chrome_found = False
-    for chrome_path in chrome_paths:
-        success, _, _ = run_command([chrome_path, "--version"], shell=True)
-        if success:
-            print("✅ Chrome browser found")
-            chrome_found = True
-            break
-    
-    if not chrome_found:
-        print("⚠️ Chrome browser not found - please install Google Chrome")
-    
-    # Check for FFmpeg
-    success, stdout, _ = run_command(["ffmpeg", "-version"])
-    if success:
-        print("✅ FFmpeg found")
-    else:
-        print("⚠️ FFmpeg not found - video processing may not work")
-        print("   Install FFmpeg from: https://ffmpeg.org/")
-    
-    return True
-
-def create_config_files():
-    """Create default configuration files"""
-    print("⚙️ Creating configuration files...")
-    
-    # Default config
-    config = {
-        "app": {
-            "name": "YT-Nara",
-            "version": "1.0.0",
-            "debug": False
-        },
-        "video_processing": {
-            "max_video_duration": 60,
-            "watermark_text": "YT-Nara",
-            "watermark_position": "bottom_right"
-        },
-        "upload": {
-            "max_retries": 3,
-            "upload_delay_min": 30,
-            "upload_delay_max": 60
-        }
-    }
-    
-    import json
-    with open("data/config.json", "w") as f:
-        json.dump(config, f, indent=2)
-    
-    # Default accounts
-    accounts = {
-        "youtube": [
-            {"name": "account1", "logged_in": False},
-            {"name": "account2", "logged_in": False}
-        ],
-        "instagram": [
-            {"name": "account1", "logged_in": False},
-            {"name": "account2", "logged_in": False}
-        ]
-    }
-    
-    with open("data/accounts.json", "w") as f:
-        json.dump(accounts, f, indent=2)
-    
-    print("✅ Configuration files created")
-    return True
-
-def test_installation():
-    """Test the installation"""
-    print("🧪 Testing installation...")
-    
-    try:
-        # Test importing main modules
-        import aiohttp
-        import selenium
-        import moviepy
-        import yt_dlp
-        from rich.console import Console
-        
-        print("✅ All dependencies working")
-        
-        # Test YT-Nara modules
-        from modules.config import Config
-        from modules.database import ContentDatabase
-        
-        print("✅ YT-Nara modules working")
-        
-        return True
-        
-    except ImportError as e:
-        print(f"❌ Import error: {e}")
-        return False
-
-def show_next_steps():
-    """Show next steps to user"""
-    print("\n🎉 Installation Complete!")
-    print("\n📋 Next Steps:")
-    print("1. Run: python3 yt_nara.py --setup")
-    print("   (This will help you set up your social media accounts)")
-    print("\n2. Start using YT-Nara:")
-    print("   python3 yt_nara.py")
-    print("\n3. For help:")
-    print("   python3 yt_nara.py --help")
-    print("\n📖 Documentation:")
-    print("   - README.md: Overview and usage")
-    print("   - SETUP.md: Detailed setup guide")
-    print("\n⚠️ Important:")
-    print("   - Install Chrome browser if not already installed")
-    print("   - Install FFmpeg for video processing")
-    print("   - Have your social media accounts ready")
+    except subprocess.CalledProcessError:
+        # Try with --user flag
+        try:
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install", package, "--user", "--quiet"
+            ])
+            return True
+        except subprocess.CalledProcessError:
+            # Try with --break-system-packages (for externally managed environments)
+            try:
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", package, "--break-system-packages", "--quiet"
+                ])
+                return True
+            except subprocess.CalledProcessError:
+                return False
 
 def main():
-    """Main installation function"""
-    print("🚀 YT-Nara Installation Script")
-    print("=" * 40)
+    print("🚀 YT-Nara Installer")
+    print("=" * 30)
     
-    # Check system
-    if not check_system_dependencies():
-        print("\n❌ System dependency check failed")
-        return 1
+    # Required packages
+    packages = [
+        "aiohttp>=3.9.0",
+        "selenium>=4.15.0", 
+        "moviepy>=1.0.3",
+        "yt-dlp>=2023.12.30",
+        "rich>=13.7.0",
+        "colorama>=0.4.6",
+        "pyfiglet>=1.0.2",
+        "Pillow>=10.1.0",
+        "imageio-ffmpeg>=0.4.9"
+    ]
     
-    # Create directories
-    if not create_directories():
-        print("\n❌ Directory creation failed")
-        return 1
+    print("📦 Installing dependencies...")
     
-    # Install Python dependencies
-    if not install_dependencies():
-        print("\n❌ Dependency installation failed")
-        print("Try running manually: pip install -r requirements.txt")
-        return 1
+    # Detect if we're in an externally managed environment
+    externally_managed = False
+    try:
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", "--help"
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        externally_managed = True
     
-    # Create config files
-    if not create_config_files():
-        print("\n❌ Configuration file creation failed")
-        return 1
+    if externally_managed:
+        print("⚠️ Detected externally managed environment, using alternative installation methods...")
     
-    # Test installation
-    if not test_installation():
-        print("\n❌ Installation test failed")
-        return 1
+    # Try different installation methods
+    install_methods = [
+        (["--quiet"], "normal pip"),
+        (["--user", "--quiet"], "user installation"),
+        (["--break-system-packages", "--quiet"], "system override")
+    ]
     
-    # Show next steps
-    show_next_steps()
+    installed = False
+    for flags, method_name in install_methods:
+        try:
+            print(f"   Trying {method_name}...")
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install"
+            ] + packages + flags)
+            print("✅ All dependencies installed successfully")
+            installed = True
+            break
+        except subprocess.CalledProcessError:
+            continue
     
-    return 0
+    if not installed:
+        print("⚠️ Batch install failed, trying individual packages...")
+        
+        failed_packages = []
+        for package in packages:
+            print(f"   Installing {package.split('>=')[0]}...", end=" ")
+            if install_package(package):
+                print("✅")
+            else:
+                print("❌")
+                failed_packages.append(package)
+        
+        if failed_packages:
+            print(f"\n❌ Failed to install: {', '.join(p.split('>=')[0] for p in failed_packages)}")
+            print("💡 Try installing them manually:")
+            for package in failed_packages:
+                print(f"   pip install {package}")
+            return False
+        else:
+            print("✅ All dependencies installed")
+    
+    print("\n🧪 Testing installation...")
+    
+    # Test imports
+    test_imports = [
+        ("aiohttp", "aiohttp"),
+        ("selenium", "selenium"),
+        ("moviepy", "moviepy.editor"),
+        ("yt-dlp", "yt_dlp"),
+        ("rich", "rich.console"),
+        ("colorama", "colorama"),
+        ("pyfiglet", "pyfiglet"),
+        ("Pillow", "PIL")
+    ]
+    
+    failed_imports = []
+    for name, module in test_imports:
+        try:
+            __import__(module)
+            print(f"✅ {name}")
+        except ImportError:
+            print(f"❌ {name}")
+            failed_imports.append(name)
+    
+    if failed_imports:
+        print(f"\n❌ Import test failed for: {', '.join(failed_imports)}")
+        return False
+    
+    print("\n🎉 Installation Complete!")
+    print("=" * 30)
+    print("✅ YT-Nara is ready to use!")
+    print("\n🚀 Quick Start:")
+    print("   python3 yt_nara.py")
+    print("\n📖 Help:")
+    print("   python3 yt_nara.py --help")
+    print("\n⚡ Example:")
+    print('   python3 yt_nara.py --topic "one piece" --cycles 2')
+    print("\n💡 Note: The script will auto-create directories and config files")
+    
+    return True
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        success = main()
+        if not success:
+            print("\n❌ Installation failed!")
+            print("💡 Try: pip install -r requirements.txt")
+            sys.exit(1)
+    except KeyboardInterrupt:
+        print("\n⚠️ Installation cancelled by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        sys.exit(1)
