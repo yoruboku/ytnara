@@ -1,0 +1,22 @@
+{
+  "youtube": [
+    {
+      "name": "account1",
+      "logged_in": false
+    },
+    {
+      "name": "account2",
+      "logged_in": false
+    }
+  ],
+  "instagram": [
+    {
+      "name": "account1",
+      "logged_in": false
+    },
+    {
+      "name": "account2",
+      "logged_in": false
+    }
+  ]
+}

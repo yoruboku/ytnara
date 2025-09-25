@@ -16,6 +16,9 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import argparse
 
+# Create logs directory first
+Path('logs').mkdir(exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -25,9 +28,6 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-
-# Create logs directory
-Path('logs').mkdir(exist_ok=True)
 
 @dataclass
 class ContentItem:

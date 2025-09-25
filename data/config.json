@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "YT-Nara",
+    "version": "1.0.0",
+    "debug": false
+  },
+  "video_processing": {
+    "max_video_duration": 60,
+    "watermark_text": "YT-Nara",
+    "watermark_position": "bottom_right"
+  },
+  "upload": {
+    "max_retries": 3,
+    "upload_delay_min": 30,
+    "upload_delay_max": 60
+  }
+}

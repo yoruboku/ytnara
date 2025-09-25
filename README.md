@@ -32,21 +32,20 @@
 
 ## 🛠️ **SUPER EASY INSTALLATION**
 
-### One Command Setup (Linux/Mac)
+### One Command Setup (All Platforms)
 ```bash
 git clone <repository-url>
 cd yt-nara
-./setup.sh
+python3 setup_simple.py
 ```
 
-### One Command Setup (Windows)
+**That's it! One command does everything - no complex setup, no API keys, no configuration files to edit.**
+
+### Alternative (if you have issues):
 ```bash
-git clone <repository-url>
-cd yt-nara
-setup.bat
+# Quick fix for any setup issues
+python3 quick_fix.py
 ```
-
-**That's it! No complex setup, no API keys, no configuration files to edit.**
 
 ### What the setup script does:
 - ✅ Installs all free Python dependencies
